@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title id="title"></title>
+</head>
+<body onload="setPageDefaults()">
+	<table width="100%">
+		<tr>
+			<td width="100%"><h1 id="titleHeader"></h1></td>
+		</tr>
+		<tr>
+			<td width="10%">
+				<select onchange="setImage(value)" id="imageSelection">
+					<option value=facepaint>Face Paint</option>
+					<!--
+					<option value=cyborg>Cyborg</option>
+					<option value=yellowflowers>Yellow Flowers</option>
+					<option value=babygroot>Baby Groot</option>
+					-->
+				</select>
+				<select onchange="setFilter()" id="filterSelection">
+					<option value=grayScale>Gray Scale</option>
+					<option value=grayScaleRMS>Gray Scale RMS</option>
+					<option value=redChannel>Red Scale</option>
+					<option value=greenChannel>Green Scale</option>
+					<option value=blueChannel>Blue Scale</option>
+					<option value=posterizeFloor>Posterize Dark</option>
+					<option value=posterizeCeil>Posterize Bright</option>
+					<option value=invert>Invert</option>
+					<option value=pixelate>Pixelate</option>
+				</select>
+			</td>
+			<td width="90%"><img id="target" src="resources/facepaint.jpg"></td>
+			<td><canvas id="canvas"></canvas></td>
+		</tr>
+	</table>
+	
+
+
+</body>
+<script type="text/javascript" src="index.js"></script>
+</html>
