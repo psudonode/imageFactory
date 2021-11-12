@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<style type="text/css" src="index.css"></style>
 	<meta charset="utf-8">
 	<title id="title"></title>
 </head>
@@ -11,28 +12,32 @@
 		</tr>
 		<tr>
 			<td width="10%">
-				<select onchange="setImage(value)" id="imageSelection">
-					<option value=facepaint>Face Paint</option>
-					<!--
-					<option value=cyborg>Cyborg</option>
-					<option value=yellowflowers>Yellow Flowers</option>
-					<option value=babygroot>Baby Groot</option>
-					-->
-				</select>
-				<select onchange="setFilter()" id="filterSelection">
-					<option value=grayScale>Gray Scale</option>
-					<option value=grayScaleRMS>Gray Scale RMS</option>
-					<option value=redChannel>Red Scale</option>
-					<option value=greenChannel>Green Scale</option>
-					<option value=blueChannel>Blue Scale</option>
-					<option value=posterizeFloor>Posterize Dark</option>
-					<option value=posterizeCeil>Posterize Bright</option>
-					<option value=invert>Invert</option>
-					<option value=pixelate>Pixelate</option>
-				</select>
+				<b>Image</b>
+				<br>
+				<div id = "imageList"></div>
+				<br>
+				<br>
+				<b>Filter</b>
+				<br>
+				<div id = "filterList"></div>
+				<br>
+				<br>
+				<b>Parameter</b> 
+				<br>
+				(does not apply to all filters)
+				<br>
+				<!-- Change to Dynamically adjust settings to better suit functionality of filter -->
+				<input type="range" min="2" max="30" value="15" class="slider" id="parameter" onchange="filter.update()">
+				<br>
+				<br>
+				<button onclick="filter.update()">UPDATE</button>
 			</td>
-			<td width="90%"><img id="target" src="resources/facepaint.jpg"></td>
-			<td><canvas id="canvas"></canvas></td>
+			<td>
+				<canvas id="displayCanvas"></canvas>
+			</td>
+			<td>
+				<canvas id="filterCanvas"></canvas>
+			</td>
 		</tr>
 	</table>
 	
