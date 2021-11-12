@@ -36,10 +36,12 @@ class IMFilter {
 	#height;  // Number of pixels tall of the image subjected to processing.
 	#imgHeight;
 	#imgWidth;
+	#screenWidth;
 	#ctxD;  // Context2D object used to get/set pixel values for the canvas element. (displayCanvas CTX)
 	#ctxF;  // Context2D object used to get/set pixel values for the canvas element. (filterCanvas CTX)
 	#imgData3D;  // A 3D array of pixel data, used to enable calculations based off of neighboring pixels (such as: pixelation, edge detection, convolution).
-	#imgDataHelper3D; // Used as a data container while performing 3D pixel array computations. Necessary to avoid errors arising from array reference passing.
+	#imgData3DRegisterA; // Used as a data container while performing 3D pixel array computations. Necessary to avoid errors arising from array reference passing.
+	#imgData3DRegisterB; // Used as a data container while performing 3D pixel array computations. Necessary to avoid errors arising from array reference passing.
 	#filterSelectionMenu = [  // A list of values used to create a "select" element populated with filter options that the user can select.
 		["filterSelection", "", 0],
 		["grayScale", "Gray Scale", 0],
@@ -166,11 +168,12 @@ class IMFilter {
 		this.#buildMenu("filterList", this.#filterSelectionMenu);
 		this.#buildMenu("imageList", this.#imageSelectionMenu);
 		this.#scaleFactor = 1;
-		//this.#filterStack = new Array();
 		this.#displayCanvas = document.getElementById("displayCanvas");
 		this.#filterCanvas = document.getElementById("filterCanvas");
 		this.#ctxD = this.#displayCanvas.getContext("2d");
 		this.#ctxF = this.#filterCanvas.getContext("2d");
+		this.#screenWidth = screen.width;
+		console.log(700/this.#screenWidth);
 		this.update();
 		this.#createDataShell();
 	}
@@ -196,12 +199,15 @@ class IMFilter {
 	*/
 	update() {
 		this.#setImage();
-		this.#scaleImage(600);
+		this.#scaleImage(this.#screenWidth * .4);
 		this.#setCanvasImage();
 		this.#setFilter();
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 	}
 
+	/*  Used to load images before app can be used to have faster image switching and avoid errors arising from 
+		trying to reference attribute values before they are stored in memory.
+	*/
 	preload() {
 		this.#imgArray = new Array();
 		var loadingImage;
@@ -214,6 +220,7 @@ class IMFilter {
 			this.#img = this.#imgArray[i];
 		}
 	}
+
 
 	/* Sets image from predetermined list.
 		Does not allow for user owned images to be set. YET....
@@ -256,6 +263,7 @@ class IMFilter {
 		this.#height = this.#filterCanvas.height;
 	}
 
+	/*   Sets the image data to each of the canvases   */
 	#setCanvasImage() {
 		this.#ctxD.drawImage(this.#img, 0, 0);
 		this.#ctxF.drawImage(this.#img, 0, 0);
@@ -321,13 +329,12 @@ class IMFilter {
 				this.#posterizeFloor();
 				break;	
 			case "bigEdge":
-				console.log("User Selection: \"Big Edge....\"");
 				this.#grayScale();
 				this.#convolve(this.bigEdgeKernel);
 				break;
 			case "edgeDetect":
-				// this.#grayScaleRMS();
-				// this.#convolve(this.blurKernel);
+				this.#grayScaleRMS();
+				this.#convolve(this.blurKernel);
 				this.#convolve(this.edgeDetectKernel);
 				// this.#convolve(this.edgeDetectKernel2)
 				break;
@@ -349,8 +356,7 @@ class IMFilter {
 		}
 	}
 
-	/*
-		This filter will create a pixelation effect on the input image.
+	/*  This filter will create a pixelation effect on the input image.
 		It will call the reshape3D() function to get a 3 dimensional array
 		to allow for easier checking of neighboring pixels within a 
 		square region to perform manipulations on color values. It will then average
@@ -360,10 +366,7 @@ class IMFilter {
 		input in the future.
 	*/
 	#pixelate() {
-		//console.log("pixelate(): STARTING....")
 		this.#reshape3D();
-		//this.imgDataShell = createDataShell(this.#imgData);
-		// Calculate the square size for the generated pixel effect
 		const gridSquareSize = document.getElementById("parameter").value; // x by x square of pixels
 		const avgDiv = gridSquareSize ** 2;
 		const gridWidth = Math.floor(this.#width/gridSquareSize); // how many grid square wide
@@ -399,7 +402,6 @@ class IMFilter {
 			}
 		} 
 		this.#reshape1D();
-	//	console.log("pixelate(): COMPLETE....")
 	}
 
 	/* DEPRICATED. Use "this.#convolve(kernelInput)".
@@ -411,7 +413,6 @@ class IMFilter {
 		library legacy data.
 	*/
 	#blur() {
-		//console.log("blur(): STARTING....");
 		this.#reshape3D();
 		var blurData3D = this.#imgData3D;
 		var kernel = [
@@ -440,13 +441,12 @@ class IMFilter {
 		}
 		this.#imgData3D = blurData3D;
 		this.#reshape1D();
-		//console.log("blur(): COMPLETE....");
 	}
 
 	/*	Convolution will take a kernel/mask and apply a moving average and assign the result to the center pixel of the output 
 		data structure. As of now this convolution function does not handle kernels that need to be rotated like more advanced 
 		edge detection kernels. This is also a single pass algorithm. If more than one pass is needed, call this function 
-		recursivly to achieve desired results.
+		recursively to achieve desired results.
 	*/
 	#convolve(kernelInput) {
 		//console.log("convolve():  STARTING....")
@@ -466,7 +466,6 @@ class IMFilter {
 			}
 		}
 		if (kRow % 2 == 0 || kColumn % 2 == 0) {
-			console.log("kernel dimensions must be the product of odd numbers");
 		} else {
 			if (kernelSum == 0) {
 				for (var row = kRowRadius; row < this.#height - kRowRadius; row++) { // change after padding has been accounted for
@@ -479,14 +478,12 @@ class IMFilter {
 									convolvedChannel += this.#imgData3D[row - kRowRadius + yPosition][column - kColumnRadius + xPosition][channel] * kernel[yPosition][xPosition];
 								}
 							}
-							
 							convolvedChannel = Math.sqrt(convolvedChannel ** 2);
 							convolveData3D[row][column][channel] = convolvedChannel;
 						}
 					}
 				}
 			} else {
-				//console.log("Kernal Sum != 0 ....")
 				for (var row = kRowRadius; row < this.#height-kRowRadius; row++) { // change after padding has been accounted for
 					for (var column = kColumnRadius; column < this.#width-kColumnRadius; column++) {  // change after padding has been accounted for
 						for (var channel = 0; channel < 3; channel++) {
@@ -506,7 +503,6 @@ class IMFilter {
 			}
 			this.#imgData3D = convolveData3D;
 			this.#reshape1D();
-			//console.log("convolve(): COMPLETE....");
 		}
 	}
 
@@ -514,13 +510,10 @@ class IMFilter {
 		NOTE:  (((Array[y-position][x-position][channel(Red, Green, Blue, Alpha)])))
 		Creates this.#imgData3D and this.#imgData3DHelper.
 	*/
-	#reshape3D() {
-		//console.log("reshape3D(): STARTING...");
-		
+	#reshape3D() {		
 		var data = this.#imgData.data;
 		var converted3DArray = new Array();
 		var converted3DArray2 = new Array();
-		//console.log("hello");
 		var imgChannelValuePointer = 0;
 		for (var row = 0; row < this.#height; row++) {
 			var newRow = [];
@@ -539,15 +532,12 @@ class IMFilter {
 				}
 			}
 		}
-		//console.log(converted3DArray[0][0][0]);
 		this.#imgData3D = converted3DArray;
 		this.#imgDataHelper3D = converted3DArray2;
-		//console.log("reshape3D(): COMPLETE....");
 	}
 
 	// Convert
 	#reshape1D() {
-		//console.log("reshape1D(): STARTING....")
 		var i = 0;
 		for (var row = 0; row < this.#height; row++) {
 			for (var column = 0; column < this.#width; column++) {
@@ -557,8 +547,6 @@ class IMFilter {
 				}
 			}
 		}
-		//this.#imgData = imgData1D;
-		//console.log("reshape1D(): COMPLETE...");
 	}
 
 	/*  Maintain the shape/shell of the this.imgData but clear out all channel data
@@ -603,10 +591,8 @@ class IMFilter {
 	#redChannel() {
 		var newData = this.#imgData;
 		for(var i = 0; i < newData.data.length; i += 4) {
-			//newData.data[i] = 0;
 			newData.data[i+1] = 0;
 			newData.data[i+2] = 0;
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -616,9 +602,7 @@ class IMFilter {
 		var newData = this.#imgData;
 		for(var i = 0; i < newData.data.length; i += 4) {
 			newData.data[i] = 0;
-			//newData.data[i+1] = 0;
 			newData.data[i+2] = 0;
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -629,8 +613,6 @@ class IMFilter {
 		for(var i = 0; i < newData.data.length; i += 4) {
 			newData.data[i] = 0;
 			newData.data[i+1] = 0;
-			//newData.data[i+2] = 0;
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -647,7 +629,6 @@ class IMFilter {
 			newData.data[i] = 0;
 			newData.data[i+1] = 0;
 			newData.data[i+2] = 0;
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -659,7 +640,6 @@ class IMFilter {
 			newData.data[i] = this.#imgData.data[i];
 			newData.data[i+1] = this.#imgData.data[i+2];
 			newData.data[i+2] = this.#imgData.data[i+1];
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -671,7 +651,6 @@ class IMFilter {
 			newData.data[i] = this.#imgData.data[i+2];
 			newData.data[i+1] = this.#imgData.data[i+1];
 			newData.data[i+2] = this.#imgData.data[i];
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -683,7 +662,6 @@ class IMFilter {
 			newData.data[i] = this.#imgData.data[i+2];
 			newData.data[i+1] = this.#imgData.data[i];
 			newData.data[i+2] = this.#imgData.data[i+1];
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -695,7 +673,6 @@ class IMFilter {
 			newData.data[i] = this.#imgData.data[i+1];
 			newData.data[i+1] = this.#imgData.data[i];
 			newData.data[i+2] = this.#imgData.data[i+2];
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -707,7 +684,6 @@ class IMFilter {
 			newData.data[i] = this.#imgData.data[i+1];
 			newData.data[i+1] = this.#imgData.data[i+2];
 			newData.data[i+2] = this.#imgData.data[i];
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -722,7 +698,6 @@ class IMFilter {
 			newData.data[i] = 255 - this.#imgData.data[i];
 			newData.data[i+1] = 255 - this.#imgData.data[i+1];
 			newData.data[i+2] = 255 - this.#imgData.data[i+2];
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -759,7 +734,6 @@ class IMFilter {
 			newData.data[i] = Math.floor(this.#imgData.data[i]/sink) * sink;
 			newData.data[i+1] = Math.floor(this.#imgData.data[i+1]/sink) * sink;
 			newData.data[i+2] = Math.floor(this.#imgData.data[i+2]/sink) * sink;
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -777,7 +751,6 @@ class IMFilter {
 			newData.data[i] = Math.ceil(this.#imgData.data[i]/sink) * sink;
 			newData.data[i+1] = Math.ceil(this.#imgData.data[i+1]/sink) * sink;
 			newData.data[i+2] = Math.ceil(this.#imgData.data[i+2]/sink) * sink;
-			//newData.data[i+3] = 0;
 		}
 		this.#imgData = newData;
 	}
@@ -788,7 +761,6 @@ class IMFilter {
 		results that would be to complicated and inefficient to perform otherwise.
 	*/
 	#runFilterStack() {
-		//console.log(this.#filterStack.length);
 		for (var i = 0; i < this.#filterStack.length; i++) {
 			this.#filterStack[i]();
 		}
