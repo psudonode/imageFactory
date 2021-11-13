@@ -1,2 +1,102 @@
+/*
+	#elementID - id selector 
+	p      - html element selector
+	.class - class selector
+	p.class - selects elements "P" with class "class"
+	*       - universal selector
+*/
+#welcome {
+	width: 100%;
+	height: 100%;
+	background-color: black;
+	color: gold;
+	font-size: 72px;
+	font: arial;
+	opacity: 95%;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: 5;
+}
+.slide {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: white;
+	font: arial;
+	font-size: 72px;
+	text-align: center;
+	opacity: 0%;
+	
+}
+@keyframes welcome-text {
+	0% {opacity: 0%;}
+	5% {opacity: 80%;}
+	25% {opacity: 90%;}
+	50% {opacity: 100%;}
+	75% {opacity: 90%;}
+	95% {opacity: 80%;}
+	100% {opacity: 0%;}
+}
+@keyframes welcome-text-final {
+	0% {opacity: 0%;}
+	5% {opacity: 80%;}
+	25% {opacity: 90%;}
+	100% {opacity: 100%;}
+}
+#slide1 {
+	animation-name: welcome-text;
+	animation-duration: 3s;
+	animation-delay: 0s;
+}
 
-
+#slide2 {
+	animation-name: welcome-text;
+	animation-duration: 3s;
+	animation-delay: 3s;
+}
+#slide3 {
+	animation-name: welcome-text-final;
+	animation-duration: 10s;
+	animation-delay: 6s;
+}
+td {
+	border-style: outset;
+	border-width: 5px;
+	border-color: gold;
+}
+table {
+	padding: 0px;
+	margin: 0px;
+	border-spacing: 0px;
+	border-collapse: collapse;
+	width: 100%;
+	z-index: 2;
+}
+body {
+	background-color: black;
+	color: white;
+	margin: 0px;
+	padding: 0px;
+	border-color: gold;
+	border-width: 5px;
+	border-style: outset;
+}
+tr {
+	width: 100%;
+}
+.display {
+	padding: 0px;
+	margin: 0px;
+	border-spacing: 0px;
+}
+.title {
+	border-width: 0px;
+	border-style: none;
+	text-align: center;
+}
+#titleHeader {
+	border-width: 0px;
+	border-style: none;
+}

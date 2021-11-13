@@ -14,15 +14,6 @@
 	Eventually this library will be made into a Class or classes to allow for modularity and portability.
 */
 
-
-// This method will eventually be a part of a pSudoNode project library to set defaults to all project pages and 
-// allow for uniformity and design language to be established.
-function setPageDefaults() {  // LOW PRIORITY
-	const filename = window.location.pathname.split("/").at(-2);
-	document.getElementById("title").innerHTML = filename;
-	document.getElementById("titleHeader").innerHTML = filename;
-}
-
 class IMFilter {
 	#filterStack;
 	#img; // Hold img for reference data to transfer to canvases.
@@ -60,17 +51,17 @@ class IMFilter {
 	];
 	#imageSelectionMenu = [  //  A list of local image file names used to allow user selection to demonstrate filter effects on a range of color pallets and textures.
 		["imageSelection", "", 0, 0],
-		["resources/facepaint.jpg", "Face Paint", 0, 0],
-		["resources/babygroot.jpg", "Baby Groot", 0, 0],
-		["resources/yellowflowers.jpg", "Yellow Flowers", 0, 0],
-		["resources/cyborg.jpg", "Cyborg", 0, 0]
+		["resources\\facepaint.jpg", "Face Paint", 0, 0],
+		["resources\\babygroot.jpg", "Baby Groot", 0, 0],
+		["resources\\yellowflowers.jpg", "Yellow Flowers", 0, 0],
+		["resources\\cyborg.jpg", "Cyborg", 0, 0]
 	];
 	#imageList = [
 		"list", 
-		"resources/facepaint.jpg",
-		"resources/babygroot.jpg",
-		"resources/yellowflowers.jpg",
-		"resources/cyborg.jpg"
+		"resources\\facepaint.jpg",
+		"resources\\babygroot.jpg",
+		"resources\\yellowflowers.jpg",
+		"resources\\cyborg.jpg"
 	];
 	bigBlurKernel = [  // A strong blur kernel. Use this kernel one time in stead of multiple small blurring convolutions. Computationally more efficient.
 		[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
@@ -171,9 +162,14 @@ class IMFilter {
 		this.#ctxD = this.#displayCanvas.getContext("2d");
 		this.#ctxF = this.#filterCanvas.getContext("2d");
 		this.update();
-		// this.#create3D();
+		this.#create3D();
+		this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
+		this.#copyImgData3D(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
 		this.#createDataShell();
+		//setTimeout(this.update(), 2000);
 	}
+
+
 
 	/*  REWORK
 		Used to load images before app can be used to have faster image switching and avoid errors arising from 
@@ -216,11 +212,25 @@ class IMFilter {
 		******
 	*/
 	update() {
+		// this.splashScreen();
 		this.#setImage();
 		this.#scaleImage();
 		this.#setCanvasImage();
 		this.#setFilter();
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
+	}
+
+	splashScreen() {
+		this.update();
+		var div = document.getElementById("welcome");
+		//div.setAttribute("style", "zIndex: -1; opacity: 0.0;")
+		div.style.zIndex = "-1";
+		div.style.opacity = "0.0";
+		// var slides = document.querySelector(".slide");
+		// for (var i = 0; i < slides.length; i++) {
+		// 	slides[i].style.opacity = "0.0";
+		// 	slides[i].style.color = "black";
+		// } 
 	}
 
 
@@ -241,7 +251,7 @@ class IMFilter {
 		unintentional cropping. 
 	*/
 	#scaleImage() {
-		var pixelsWide = screen.width * .4;
+		var pixelsWide = document.querySelector(".display").clientWidth;
 		var value = document.getElementById("imageSelection").value;
 		var selectedImageIndex = this.#imageList.indexOf(value);
 
@@ -497,7 +507,7 @@ class IMFilter {
 							if (convolvedChannel < 0) {
 								convolvedChannel = Math.sqrt(convolvedChannel ** 2);
 							}
-							console.log(convolvedChannel);
+							//console.log(convolvedChannel);
 							convolveData3D[row][column][channel] = convolvedChannel / kernelSum;///////////////////////////////////////
 						}
 					}
@@ -840,5 +850,27 @@ class IMFilter {
 	}
 }
 
+// This method will eventually be a part of a pSudoNode project library to set defaults to all project pages and 
+// allow for uniformity and design language to be established.
+function setPageDefaults() {  // LOW PRIORITY
+	const filename = window.location.pathname.split("/").at(-2);
+	document.getElementById("title").innerHTML = filename;
+	document.getElementById("titleHeader").innerHTML = filename;
+}
+
+// function splashScreen() {
+// 	// filter.update();
+// 	var div = document.getElementById("welcome");
+// 	div.style.zIndex = "-1";
+// 	div.style.opacity = "0.0";
+// 	// var slides = document.querySelector(".slide");
+// 	// for (var i = 0; i < slides.length; i++) {
+// 	// 	slides[i].style.opacity = "0.0";
+// 	// 	slides[i].style.color = "black";
+// 	// } 
+// }
+
+
 
 var filter = new IMFilter();
+filter.update();
