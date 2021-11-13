@@ -4,13 +4,10 @@
 /* Description:
 	index.js is a prototype image processing library for web applications. As it currently stands it is a client side library
 	that could easily be converted into a server based application depending on project limitations and feasibility.
-
 	Some basic image filters are present doing simple value manipulations on color channel data.
-
 	The HTML5 canvas element is the key platform for this library. The canvas element uses a 1 dimensional array containing all color and 
 	alpha channel data like so [red0, green0, blue0, alpha0, red1, green1, blue1, alpha1, ...... ]. Most the basic filters are building blocks
 	for the more complex filter effects using the filter stack.
-
 	Eventually this library will be made into a Class or classes to allow for modularity and portability.
 */
 
@@ -36,6 +33,7 @@ class IMFilter {
 	#height;  // Number of pixels tall of the image subjected to processing.
 	#imgHeight;
 	#imgWidth;
+	#screenWidth;
 	#ctxD;  // Context2D object used to get/set pixel values for the canvas element. (displayCanvas CTX)
 	#ctxF;  // Context2D object used to get/set pixel values for the canvas element. (filterCanvas CTX)
 	#imgData3D;  // A 3D array of pixel data, used to enable calculations based off of neighboring pixels (such as: pixelation, edge detection, convolution).
@@ -59,7 +57,7 @@ class IMFilter {
 		["edgeDetect", "Edge Detection", 0]
 	];
 	#imageSelectionMenu = [  //  A list of local image file names used to allow user selection to demonstrate filter effects on a range of color pallets and textures.
-		["imageSelection", "", 0, 0],
+		["imageSelection", "", 0],
 		["resources/facepaint.jpg", "Face Paint", 0, 0],
 		["resources/babygroot.jpg", "Baby Groot", 0, 0],
 		["resources/yellowflowers.jpg", "Yellow Flowers", 0, 0],
@@ -124,14 +122,14 @@ class IMFilter {
 		[0,0,0,0,0,0,0,0,0],
 		[0,0,0,0,0,0,0,0,0],
 		[0,1119,0,0,0,0,0,1119,0],
-		[1119,0,0,0,0,0,0,0,1119]
+		[1119,0,0,0,0,0,0,0,1119],
 	];
-	verticalEdgeDetectKernel = [  // Kernel used for vertical edge detection.
+	edgeDetectKernel = [  // Kernel used for vertical edge detection.
 		[-1,0,1],
 		[-2,0,2],
 		[-1,0,1]
 	];
-	horizontalEdgeDetectKernel = [  // Kernel used for horizontal edge detection.
+	edgeDetectKernel2 = [  // Kernel used for horizontal edge detection.
 		[-1,-2,-1],
 		[0,0,0],
 		[1,2,1]
@@ -140,7 +138,7 @@ class IMFilter {
 		[-2,2,2],
 		[-3,4,3],
 		[-2,-2,2]
-	];  
+	];  //
 	clownSmearKernel = [  // EXPERIMENTAL...  When used on a color image a smeared clown makeup effect is present.
 		[1,0,1],
 		[-1,0,1],
@@ -163,42 +161,22 @@ class IMFilter {
 	];  
 
 	constructor() {
-		this.#preload();
+		this.preload();
 		this.#buildMenu("filterList", this.#filterSelectionMenu);
 		this.#buildMenu("imageList", this.#imageSelectionMenu);
+		this.#scaleFactor = 1;
 		this.#displayCanvas = document.getElementById("displayCanvas");
 		this.#filterCanvas = document.getElementById("filterCanvas");
 		this.#ctxD = this.#displayCanvas.getContext("2d");
 		this.#ctxF = this.#filterCanvas.getContext("2d");
+		//this.#screenWidth = screen.width;
+		//console.log(700/this.#screenWidth);
 		this.update();
-		// this.#create3D();
 		this.#createDataShell();
 	}
 
-	/*  REWORK
-		Used to load images before app can be used to have faster image switching and avoid errors arising from 
-		trying to reference attribute values before they are stored in memory.
-	*/
-	#preload() {
-		this.#imgArray = new Array();
-		var loadingImage;
-		for (var i = 1; i < this.#imageList.length; i++) {
-			loadingImage = new Image();
-			loadingImage.src = this.#imageList[i];
-			this.#imgArray[i] = loadingImage;
-			this.#imageSelectionMenu[i][2] = this.#imgArray[i].height;
-			console.log(this.#imgArray[i].height);
-			this.#imageSelectionMenu[i][3] = this.#imgArray[i].width;
-			this.#img = this.#imgArray[i];
-			console.log(this.#imgArray[i].height, this.#imgArray[i].width);
-			if (this.#imgArray[i].height == 0 || this.#imgArray[i].width == 0) {
-				
-			}
-		}
-	}
-
 	#buildMenu(target, menuList) {
-		//console.log(target, "buildMenu(): STARTING....");
+		console.log(target, "buildMenu(): STARTING....");
 		let targetDiv = document.getElementById(target);
 		let selectBox = document.createElement("select");
 		selectBox.id = menuList[0][0];
@@ -207,6 +185,7 @@ class IMFilter {
 			selectOption.value = menuList[i][0];
 			selectOption.innerHTML = menuList[i][1];
 			selectBox.appendChild(selectOption);
+
 		}
 		selectBox.setAttribute("onchange", "filter.update()");
 		targetDiv.appendChild(selectBox);
@@ -223,32 +202,59 @@ class IMFilter {
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 	}
 
+	/*  Used to load images before app can be used to have faster image switching and avoid errors arising from 
+		trying to reference attribute values before they are stored in memory.
+	*/
+	preload() {
+		this.#imgArray = new Array();
+		var loadingImage;
+		for (var i = 1; i < this.#imageList.length; i++) {
+			loadingImage = new Image();
+			loadingImage.src = this.#imageList[i];
+			console.log(this.#imageList[i]);
+			console.log(loadingImage);
+			this.#imgArray[i] = loadingImage;
+			console.log(this.#imgArray[i]);
+			this.#imageSelectionMenu[i][2] = this.#imgArray[i].height;
+			this.#imageSelectionMenu[i][3] = this.#imgArray[i].width;
+			this.#img = this.#imgArray[i];
+			console.log(this.#imgArray[i]);
+		}
+	}
+
 
 	/* Sets image from predetermined list.
 		Does not allow for user owned images to be set. YET....
-		Sets image variable for data reference for display and filter canvases. If image is too large to be displayed on screen at 
+		Sets image for original and Filter effected image. If image is too large to be displayed on screen at 
 		native resolution image scaling will be necessary to prevent any unintentional cropping.
 	*/
 	#setImage() {
-		var value = document.getElementById("imageSelection").value;
-		var index = this.#imageList.indexOf(value);
-		this.#img = this.#imgArray[index];
-		console.log(this.#img);
+		this.#img = this.#imgArray[this.#imageList.indexOf(document.getElementById("imageSelection").value)];
 	}
 
-	/*  Scale images to 40% of screen width while maintaining the image ratio.
+
+	/* 
 		The purpose of this function is to scale an Image before it is displayed on the screen so that there is not any 
-		unintentional cropping. 
-	*/
-	#scaleImage() {
+		unintentional cropping. */
+	#scaleImage(pixelsWide) {
 		var pixelsWide = screen.width * .4;
-		var value = document.getElementById("imageSelection").value;
-		var selectedImageIndex = this.#imageList.indexOf(value);
+		// var imgRatio = this.#img.height / this.#img.width;
+		// var newImgRatio;
+		// var margineOfError = imgRatio * .02;  //  Calculate a 15% margin of error.
+		console.log(this.#img.naturalWidth);
+		console.log(this.#img.naturalHeight);
+		if (this.#img.naturalWidth != pixelsWide) {
 
-		this.#scaleFactor = pixelsWide / this.#img.naturalWidth;
+			this.#scaleFactor = (pixelsWide / this.#img.naturalWidth);
+		} else {this.#scaleFactor = 1;}
+		
 		this.#img.width = pixelsWide;
-		this.#img.height = this.#imageSelectionMenu[selectedImageIndex][2] * this.#scaleFactor;
-
+		this.#img.height = this.#imageSelectionMenu[this.#imageList.indexOf(document.getElementById("imageSelection").value)][2] * this.#scaleFactor;
+		console.log(this.#img.height);
+		//newImgRatio = this.#img.height / this.#img.width;
+		// if ( Math.sqrt((imgRatio - newImgRatio) ** 2) > margineOfError ) {
+		// 	console.log("ERROR.... Margin of error is out side of acceptable limits. (2%)");
+		// }
 		this.#displayCanvas.setAttribute("width", this.#img.width);
 		this.#displayCanvas.setAttribute("height", this.#img.height);
 		this.#filterCanvas.setAttribute("width", this.#img.width);
@@ -269,6 +275,7 @@ class IMFilter {
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 	}
 
+
 	/* Sets filter based off of user selection.
 		This function will be called by the update function which in turn will be called when the user changes a selction value 
 		on the page controls section. It will get the filter selection value from the filterSelction element and then make the necessary 
@@ -276,6 +283,9 @@ class IMFilter {
 	*/
 	#setFilter() {
 		let filter = document.getElementById("filterSelection").value;
+		//this.#ctx.drawImage(this.#img, 0, 0);
+
+
 		let newdata;
 		switch (filter) {
 			case "pixelate":
@@ -328,18 +338,9 @@ class IMFilter {
 				break;
 			case "edgeDetect":
 				this.#grayScaleRMS();
-				this.#convolve(this.bigBlurKernel);
-				this.#convolve(this.horizontalEdgeDetectKernel);
-				// this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
-
-				// this.#setCanvasImage();
-
-				// this.#grayScaleRMS();
-				// this.#convolve(this.bigBlurKernel);
-				// this.#convolve(this.verticalEdgeDetectKernel);
-				// this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
-
-				// this.#vectorSum(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
+				this.#convolve(this.blurKernel);
+				this.#convolve(this.edgeDetectKernel);
+				// this.#convolve(this.edgeDetectKernel2)
 				break;
 			case "sharpen":
 				this.#convolve(this.sharpenKernel);
@@ -364,7 +365,6 @@ class IMFilter {
 		to allow for easier checking of neighboring pixels within a 
 		square region to perform manipulations on color values. It will then average
 		each individual RGB Values and set that RGB Value for the square region.
-
 		The region size is currently fixed within the code but will implement user 
 		input in the future.
 	*/
@@ -437,6 +437,7 @@ class IMFilter {
 											(this.#imgData3D[row+1][column][channel] * kernel[2][1]) +
 											(this.#imgData3D[row+1][column+1][channel] * kernel[2][2])
 										));
+					//console.log("blurredChannel: " + blurredChannel);
 					blurData3D[row][column][channel] = blurredChannel;
 				}
 			}
@@ -451,12 +452,14 @@ class IMFilter {
 		recursively to achieve desired results.
 	*/
 	#convolve(kernelInput) {
+		//console.log("convolve():  STARTING....")
 		this.#reshape3D();
 		var convolveData3D = this.#imgData3DRegisterA;
 		const kernel = kernelInput;
 		const kRow = kernel.length;
 
 		const kColumn = kernel[0].length;
+		//console.log("Kernel Dimension: ", kRow, kColumn);
 		const kRowRadius = Math.floor(kRow/2)
 		const kColumnRadius = Math.floor(kColumn/2);
 		var kernelSum = 0;
@@ -484,7 +487,6 @@ class IMFilter {
 					}
 				}
 			} else {
-				console.log(kernelSum);
 				for (var row = kRowRadius; row < this.#height-kRowRadius; row++) { // change after padding has been accounted for
 					for (var column = kColumnRadius; column < this.#width-kColumnRadius; column++) {  // change after padding has been accounted for
 						for (var channel = 0; channel < 3; channel++) {
@@ -497,48 +499,13 @@ class IMFilter {
 							if (convolvedChannel < 0) {
 								convolvedChannel = Math.sqrt(convolvedChannel ** 2);
 							}
-							console.log(convolvedChannel);
-							convolveData3D[row][column][channel] = convolvedChannel / kernelSum;///////////////////////////////////////
+							convolveData3D[row][column][channel] = Math.floor(convolvedChannel / kernelSum);
 						}
 					}
 				}
 			}
 			this.#imgData3D = convolveData3D;
 			this.#reshape1D();
-		}
-	}
-
-	/*  Calculate Vector Sums for egde detection vertical and horizonal values
-		Use the pythagorian formula c = SQRT(a**2 + b**2) to calculate real values.
-	*/
-	#vectorSum(verticalEdgeVector3DArray, horizontalEdgeVector3DArray) {
-		var a;
-		var b;
-		var c;
-
-		for (var row = 0; row < this.#height; row++) { // change after padding has been accounted for
-			for (var column = 0; column < this.#width; column++) {  // change after padding has been accounted for
-				for (var channel = 0; channel < 3; channel++) {
-					a = horizontalEdgeVector3DArray[row][column][channel];
-					b = verticalEdgeVector3DArray[row][column][channel];
-					c = Math.sqrt(a**2 + b**2);
-					this.#imgData3D[row][column][channel] = c;
-				}
-			}
-		}
-		this.#reshape1D();
-	}
-
-	/* Copy 3D Array data from Source array to Target array */
-	#copyImgData3D(source, target) {
-		for (var row = 0; row < this.#height; row++) { // change after padding has been accounted for
-			for (var column = 0; column < this.#width; column++) {  // change after padding has been accounted for
-				for (var channel = 0; channel < 3; channel++) {
-					// console.log(source[row][column][channel]);
-					// console.log(target[row][column][channel]);
-					target[row][column][channel] = source[row][column][channel];  ////////////////////////////////////////////
-				}
-			}
 		}
 	}
 
@@ -549,64 +516,27 @@ class IMFilter {
 	#reshape3D() {		
 		var data = this.#imgData.data;
 		var converted3DArray = new Array();
-		// var converted3DArray2 = new Array();
-		// var converted3DArray3 = new Array();
-		var imgChannelValuePointer = 0;
-		for (var row = 0; row < this.#height; row++) {
-			var newRow = [];
-			// var newRow2 = [];
-			// var newRow3 = [];
-			converted3DArray.push(newRow);
-			// converted3DArray2.push(newRow2);
-			// converted3DArray3.push(newRow3);
-			for (var column = 0; column < this.#width; column++) {
-				var newColorChannel = [];
-				// var newColorChannel2 = [];
-				// var newColorChannel3 = [];
-				newRow.push(newColorChannel);
-				// newRow2.push(newColorChannel2);
-				// newRow3.push(newColorChannel3);
-				for (var channel = 0; channel < 4; channel++) {
-					newColorChannel.push(data[imgChannelValuePointer]);
-					//newColorChannel2.push(data[imgChannelValuePointer]);
-					imgChannelValuePointer++;
-				}
-			}
-		}
-		this.#imgData3D = converted3DArray;
-	}
-
-	#create3D() {		
-		var data = this.#imgData.data;
-		var converted3DArray = new Array();
 		var converted3DArray2 = new Array();
-		var converted3DArray3 = new Array();
 		var imgChannelValuePointer = 0;
 		for (var row = 0; row < this.#height; row++) {
 			var newRow = [];
 			var newRow2 = [];
-			var newRow3 = [];
 			converted3DArray.push(newRow);
 			converted3DArray2.push(newRow2);
-			converted3DArray3.push(newRow3);
 			for (var column = 0; column < this.#width; column++) {
 				var newColorChannel = [];
 				var newColorChannel2 = [];
-				var newColorChannel3 = [];
 				newRow.push(newColorChannel);
 				newRow2.push(newColorChannel2);
-				newRow3.push(newColorChannel3);
 				for (var channel = 0; channel < 4; channel++) {
 					newColorChannel.push(data[imgChannelValuePointer]);
 					newColorChannel2.push(data[imgChannelValuePointer]);
-					newColorChannel3.push(data[imgChannelValuePointer]);
 					imgChannelValuePointer++;
 				}
 			}
 		}
 		this.#imgData3D = converted3DArray;
 		this.#imgData3DRegisterA = converted3DArray2;
-		this.#imgData3DRegisterB = converted3DArray3;
 	}
 
 	// Convert
@@ -793,7 +723,6 @@ class IMFilter {
 			floor(2.58) = 2
 			2 * sink = 2 * 64 = 128
 			valueOut  = 128
-
 		NOTE: The number of possible colors will be the fragment value to the power of 3.
 		Ex. 
 			fragment = 4
