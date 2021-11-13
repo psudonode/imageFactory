@@ -63,6 +63,20 @@ class IMFilter {
 		"resources\\yellowflowers.jpg",
 		"resources\\cyborg.jpg"
 	];
+	// #imageSelectionMenu = [  //  A list of local image file names used to allow user selection to demonstrate filter effects on a range of color pallets and textures.
+	// 	["imageSelection", "", 0, 0],
+	// 	["facepaint.jpg", "Face Paint", 0, 0],
+	// 	["babygroot.jpg", "Baby Groot", 0, 0],
+	// 	["yellowflowers.jpg", "Yellow Flowers", 0, 0],
+	// 	["cyborg.jpg", "Cyborg", 0, 0]
+	// ];
+	// #imageList = [
+	// 	"list", 
+	// 	"facepaint.jpg",
+	// 	"babygroot.jpg",
+	// 	"yellowflowers.jpg",
+	// 	"cyborg.jpg"
+	// ];
 	bigBlurKernel = [  // A strong blur kernel. Use this kernel one time in stead of multiple small blurring convolutions. Computationally more efficient.
 		[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
 		[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2],
@@ -166,7 +180,6 @@ class IMFilter {
 		this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
 		this.#copyImgData3D(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
 		this.#createDataShell();
-		//setTimeout(this.update(), 2000);
 	}
 
 
@@ -175,7 +188,7 @@ class IMFilter {
 		Used to load images before app can be used to have faster image switching and avoid errors arising from 
 		trying to reference attribute values before they are stored in memory.
 	*/
-	#preload() {
+	#preload(recurse = false) {
 		this.#imgArray = new Array();
 		var loadingImage;
 		for (var i = 1; i < this.#imageList.length; i++) {
@@ -188,7 +201,18 @@ class IMFilter {
 			this.#img = this.#imgArray[i];
 			console.log(this.#imgArray[i].height, this.#imgArray[i].width);
 			if (this.#imgArray[i].height == 0 || this.#imgArray[i].width == 0) {
-				
+				if (!recurse) {
+					for (var i = 1; i < this.#imageList.length; i++) {
+						loadingImage = new Image();
+						loadingImage.src = this.#imageList[i];
+						this.#imgArray[i] = loadingImage;
+						this.#imageSelectionMenu[i][2] = this.#imgArray[i].height;
+						console.log(this.#imgArray[i].height);
+						this.#imageSelectionMenu[i][3] = this.#imgArray[i].width;
+						this.#img = this.#imgArray[i];
+						console.log(this.#imgArray[i].height, this.#imgArray[i].width);
+					}
+				}
 			}
 		}
 	}
@@ -221,16 +245,10 @@ class IMFilter {
 	}
 
 	splashScreen() {
-		this.update();
 		var div = document.getElementById("welcome");
-		//div.setAttribute("style", "zIndex: -1; opacity: 0.0;")
 		div.style.zIndex = "-1";
-		div.style.opacity = "0.0";
-		// var slides = document.querySelector(".slide");
-		// for (var i = 0; i < slides.length; i++) {
-		// 	slides[i].style.opacity = "0.0";
-		// 	slides[i].style.color = "black";
-		// } 
+		div.style.opacity = "0%";
+		this.update(); 
 	}
 
 
@@ -275,7 +293,7 @@ class IMFilter {
 	#setCanvasImage() {
 		this.#ctxD.drawImage(this.#img, 0, 0);
 		this.#ctxF.drawImage(this.#img, 0, 0);
-		this.#imgData = this.#ctxD.getImageData(0,0,this.#width, this.#height);
+		this.#imgData = this.#ctxD.getImageData(0,0,this.#width, this.#height);  ////////////////////////////////////////////////////
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 	}
 
@@ -873,4 +891,3 @@ function setPageDefaults() {  // LOW PRIORITY
 
 
 var filter = new IMFilter();
-filter.update();

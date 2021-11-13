@@ -28,8 +28,8 @@
 	font-size: 72px;
 	text-align: center;
 	opacity: 0%;
-	
 }
+
 @keyframes welcome-text {
 	0% {opacity: 0%;}
 	5% {opacity: 80%;}
@@ -50,7 +50,6 @@
 	animation-duration: 3s;
 	animation-delay: 0s;
 }
-
 #slide2 {
 	animation-name: welcome-text;
 	animation-duration: 3s;
@@ -83,9 +82,7 @@ body {
 	border-width: 5px;
 	border-style: outset;
 }
-tr {
-	width: 100%;
-}
+tr {width: 100%;}
 .display {
 	padding: 0px;
 	margin: 0px;
@@ -99,4 +96,13 @@ tr {
 #titleHeader {
 	border-width: 0px;
 	border-style: none;
+}
+img {
+	visibility: hidden;
+	height: 0px;
+	width: 0px;
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: -1;
 }
