@@ -50,17 +50,17 @@ class IMFilter {
 	];
 	#imageSelectionMenu = [  //  A list of local image file names used to allow user selection to demonstrate filter effects on a range of color pallets and textures.
 		["imageSelection", "", 0, 0],
-		["resources//facepaint.jpg", "Face Paint", 0, 0],
-		["resources//babygroot.jpg", "Baby Groot", 0, 0],
-		["resources//yellowflowers.jpg", "Yellow Flowers", 0, 0],
-		["resources//cyborg.jpg", "Cyborg", 0, 0]
+		["resources/facepaint.jpg", "Face Paint", 0, 0],
+		["resources/babygroot.jpg", "Baby Groot", 0, 0],
+		["resources/yellowflowers.jpg", "Yellow Flowers", 0, 0],
+		["resources/cyborg.jpg", "Cyborg", 0, 0]
 	];
 	#imageList = [
 		"list", 
-		"resources//facepaint.jpg",
-		"resources//babygroot.jpg",
-		"resources//yellowflowers.jpg",
-		"resources//cyborg.jpg"
+		"resources/facepaint.jpg",
+		"resources/babygroot.jpg",
+		"resources/yellowflowers.jpg",
+		"resources/cyborg.jpg"
 	];
 	bigBlurKernel = [  // A strong blur kernel. Use this kernel one time in stead of multiple small blurring convolutions. Computationally more efficient.
 		[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
