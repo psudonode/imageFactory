@@ -25,8 +25,6 @@ class IMFilter {
 	#imgDataShell;  // A imgData data structure to maintain type compliance. Values are arbitrary until used to assist in data structure transposing.
 	#width;  // Number of pixels wide of the image subjected to processing.
 	#height;  // Number of pixels tall of the image subjected to processing.
-	#imgHeight;
-	#imgWidth;
 	#ctxD;  // Context2D object used to get/set pixel values for the canvas element. (displayCanvas CTX)
 	#ctxF;  // Context2D object used to get/set pixel values for the canvas element. (filterCanvas CTX)
 	#imgData3D;  // A 3D array of pixel data, used to enable calculations based off of neighboring pixels (such as: pixelation, edge detection, convolution).
@@ -47,36 +45,23 @@ class IMFilter {
 		["blur", "Blur", 0],
 		["bigBlur", "Big Blur", 0],
 		["sharpen", "Sharpen", 0],
-		["edgeDetect", "Edge Detection", 0]
+		["edgeDetectGray", "Edge Detection Gray", 0],
+		["edgeDetectColor", "Edge Detection Color", 0]
 	];
 	#imageSelectionMenu = [  //  A list of local image file names used to allow user selection to demonstrate filter effects on a range of color pallets and textures.
 		["imageSelection", "", 0, 0],
-		["resources\\facepaint.jpg", "Face Paint", 0, 0],
-		["resources\\babygroot.jpg", "Baby Groot", 0, 0],
-		["resources\\yellowflowers.jpg", "Yellow Flowers", 0, 0],
-		["resources\\cyborg.jpg", "Cyborg", 0, 0]
+		["resources//facepaint.jpg", "Face Paint", 0, 0],
+		["resources//babygroot.jpg", "Baby Groot", 0, 0],
+		["resources//yellowflowers.jpg", "Yellow Flowers", 0, 0],
+		["resources//cyborg.jpg", "Cyborg", 0, 0]
 	];
 	#imageList = [
 		"list", 
-		"resources\\facepaint.jpg",
-		"resources\\babygroot.jpg",
-		"resources\\yellowflowers.jpg",
-		"resources\\cyborg.jpg"
+		"resources//facepaint.jpg",
+		"resources//babygroot.jpg",
+		"resources//yellowflowers.jpg",
+		"resources//cyborg.jpg"
 	];
-	// #imageSelectionMenu = [  //  A list of local image file names used to allow user selection to demonstrate filter effects on a range of color pallets and textures.
-	// 	["imageSelection", "", 0, 0],
-	// 	["facepaint.jpg", "Face Paint", 0, 0],
-	// 	["babygroot.jpg", "Baby Groot", 0, 0],
-	// 	["yellowflowers.jpg", "Yellow Flowers", 0, 0],
-	// 	["cyborg.jpg", "Cyborg", 0, 0]
-	// ];
-	// #imageList = [
-	// 	"list", 
-	// 	"facepaint.jpg",
-	// 	"babygroot.jpg",
-	// 	"yellowflowers.jpg",
-	// 	"cyborg.jpg"
-	// ];
 	bigBlurKernel = [  // A strong blur kernel. Use this kernel one time in stead of multiple small blurring convolutions. Computationally more efficient.
 		[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
 		[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2],
@@ -176,19 +161,14 @@ class IMFilter {
 		this.#ctxD = this.#displayCanvas.getContext("2d");
 		this.#ctxF = this.#filterCanvas.getContext("2d");
 		this.update();
-		this.#create3D();
-		this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
-		this.#copyImgData3D(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
 		this.#createDataShell();
 	}
-
-
 
 	/*  REWORK
 		Used to load images before app can be used to have faster image switching and avoid errors arising from 
 		trying to reference attribute values before they are stored in memory.
 	*/
-	#preload(recurse = false) {
+	#preload() {
 		this.#imgArray = new Array();
 		var loadingImage;
 		for (var i = 1; i < this.#imageList.length; i++) {
@@ -200,20 +180,6 @@ class IMFilter {
 			this.#imageSelectionMenu[i][3] = this.#imgArray[i].width;
 			this.#img = this.#imgArray[i];
 			console.log(this.#imgArray[i].height, this.#imgArray[i].width);
-			if (this.#imgArray[i].height == 0 || this.#imgArray[i].width == 0) {
-				if (!recurse) {
-					for (var i = 1; i < this.#imageList.length; i++) {
-						loadingImage = new Image();
-						loadingImage.src = this.#imageList[i];
-						this.#imgArray[i] = loadingImage;
-						this.#imageSelectionMenu[i][2] = this.#imgArray[i].height;
-						console.log(this.#imgArray[i].height);
-						this.#imageSelectionMenu[i][3] = this.#imgArray[i].width;
-						this.#img = this.#imgArray[i];
-						console.log(this.#imgArray[i].height, this.#imgArray[i].width);
-					}
-				}
-			}
 		}
 	}
 
@@ -232,25 +198,28 @@ class IMFilter {
 		targetDiv.appendChild(selectBox);
 	}
 
-	/* Updates displayed image and filter effect based on user input. 
-		******
-	*/
+	/* Updates displayed image and filter effect based on user input. */
 	update() {
-		// this.splashScreen();
 		this.#setImage();
 		this.#scaleImage();
 		this.#setCanvasImage();
+		this.#create3D();
+		this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
+		this.#copyImgData3D(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
 		this.#setFilter();
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 	}
 
-	splashScreen() {
+	/*   Dismiss the Welcome Splash Screen Animation
+		Hides Welcome Splash Screen underneath all other content when clicked on.
+		Sets WSS opacity to 0 so it isn't seen in the background.
+	*/
+	dismissSplashScreen() {
 		var div = document.getElementById("welcome");
 		div.style.zIndex = "-1";
 		div.style.opacity = "0%";
 		this.update(); 
 	}
-
 
 	/* Sets image from predetermined list.
 		Does not allow for user owned images to be set. YET....
@@ -297,182 +266,6 @@ class IMFilter {
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 	}
 
-	/* Sets filter based off of user selection.
-		This function will be called by the update function which in turn will be called when the user changes a selction value 
-		on the page controls section. It will get the filter selection value from the filterSelction element and then make the necessary 
-		filter function calls to achieve the desired effect.
-	*/
-	#setFilter() {
-		let filter = document.getElementById("filterSelection").value;
-		let newdata;
-		switch (filter) {
-			case "pixelate":
-				this.#pixelate();
-				break;
-			case "redChannel":
-				this.#redChannel();
-				break;
-			case "blueChannel":
-				this.#blueChannel();
-				break;
-			case "greenChannel":
-				this.#greenChannel();
-				break;
-			case "invert":
-				this.#invert();
-				break;
-			case "grayScale":
-				this.#grayScale();
-				break;
-			case "posterizeFloor":
-				this.#posterizeFloor();
-				break;
-			case "posterizeCeil":
-				this.#posterizeCeil();
-				break;
-			case "grayScaleRMS":
-				this.#grayScaleRMS();
-				break;
-			case "blur":
-				this.#blur();
-				this.#convolve(this.blurKernel);
-				break;
-			case "bigBlur":
-				this.#convolve(this.bigBlurKernel);
-				break;
-			case "swirlBlur":
-				this.#convolve(this.swirlKernel);
-				break;	
-			case "boxBlur":
-				this.#convolve(this.boxKernel);
-				break;	
-			case "jackBlur":
-				this.#convolve(this.crossKernel);
-				this.#posterizeFloor();
-				break;	
-			case "bigEdge":
-				this.#grayScale();
-				this.#convolve(this.bigEdgeKernel);
-				break;
-			case "edgeDetect":
-				this.#grayScaleRMS();
-				this.#convolve(this.bigBlurKernel);
-				this.#convolve(this.horizontalEdgeDetectKernel);
-				// this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
-
-				// this.#setCanvasImage();
-
-				// this.#grayScaleRMS();
-				// this.#convolve(this.bigBlurKernel);
-				// this.#convolve(this.verticalEdgeDetectKernel);
-				// this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
-
-				// this.#vectorSum(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
-				break;
-			case "sharpen":
-				this.#convolve(this.sharpenKernel);
-				break;
-			case "grayPoster":
-				this.#grayScaleRMS();
-				this.#posterizeFloor();
-				break;
-			case "redPoster":
-				this.#redChannel();
-				this.#posterizeFloor();
-				break;
-			case "grayPixel":
-				this.#grayScaleRMS();
-				this.#pixelate();
-				break;
-		}
-	}
-
-	/*  This filter will create a pixelation effect on the input image.
-		It will call the reshape3D() function to get a 3 dimensional array
-		to allow for easier checking of neighboring pixels within a 
-		square region to perform manipulations on color values. It will then average
-		each individual RGB Values and set that RGB Value for the square region.
-
-		The region size is currently fixed within the code but will implement user 
-		input in the future.
-	*/
-	#pixelate() {
-		this.#reshape3D();
-		const gridSquareSize = document.getElementById("parameter").value; // x by x square of pixels
-		const avgDiv = gridSquareSize ** 2;
-		const gridWidth = Math.floor(this.#width/gridSquareSize); // how many grid square wide
-		const gridHeight = Math.floor(this.#height/gridSquareSize); // how many grid squares tall
-		const widthTrim = Math.ceil((this.#width - (gridWidth*gridSquareSize))/2);
-		const heightTrim = Math.ceil((this.#height - (gridHeight*gridSquareSize))/2);
-
-		for (var y = 0; y < gridHeight; y++) {
-			for (var x = 0; x < gridWidth; x++) {
-				// Iterate through all values within grid squares and sum the values
-				var redChannelSum = 0;
-				var greenChannelSum = 0;
-				var blueChannelSum = 0;
-				for (var yInner = (y*gridSquareSize)+heightTrim; yInner < (((y+1)*gridSquareSize)+heightTrim); yInner++) {
-					for (var xInner = (x*gridSquareSize)+widthTrim; xInner < (((x+1)*gridSquareSize)+widthTrim); xInner++) {
-						redChannelSum += this.#imgData3D[yInner][xInner][0];
-						greenChannelSum += this.#imgData3D[yInner][xInner][1];
-						blueChannelSum += this.#imgData3D[yInner][xInner][2];
-					}
-				}
-
-				// Average the total channel sums and assign the values to every pixel within the grid square
-				var redChannelAverage = redChannelSum / avgDiv;
-				var greenChannelAverage = greenChannelSum / avgDiv;
-				var blueChannelAverage = blueChannelSum / avgDiv;
-				for (var yInner = (y*gridSquareSize)+heightTrim; yInner < (((y+1)*gridSquareSize)+heightTrim); yInner++) {
-					for (var xInner = (x*gridSquareSize)+widthTrim; xInner < (((x+1)*gridSquareSize)+widthTrim); xInner++) {
-						this.#imgData3D[yInner][xInner][0] = redChannelAverage;
-						this.#imgData3D[yInner][xInner][1] = greenChannelAverage;
-						this.#imgData3D[yInner][xInner][2] = blueChannelAverage;
-					}
-				}
-			}
-		} 
-		this.#reshape1D();
-	}
-
-	/* DEPRICATED. Use "this.#convolve(kernelInput)".
-		Basic Blur Filter
-		This Filter uses the convolution method and a built in weighted kernel to achieve a blurring affect. 
-		This method is ineffective and was developed more as a proof of concept. After futher research it has been determined that 
-		in order to have a blur effect with greater intensity a kernel with a larger distribution radius would be more cost effective then 
-		running this algorithm repeatedly. This function will be kept as a point of reference for algorithm efficiency as well as for 
-		library legacy data.
-	*/
-	#blur() {
-		this.#reshape3D();
-		var blurData3D = this.#imgData3D;
-		var kernel = [
-						[.0625,.125,.0625],
-						[.125,.25,.125],
-						[.0625,.125,.0625]
-					 ];
-		for (var row = 1; row < this.#height-1; row++) {
-			for (var column = 1; column < this.#width-1; column++) {
-				for (var channel = 0; channel < 3; channel++) {
-					var blurredChannel = Math.floor((
-											(this.#imgData3D[row-1][column-1][channel] * kernel[0][0]) +
-											(this.#imgData3D[row-1][column][channel] * kernel[0][1]) +
-											(this.#imgData3D[row-1][column+1][channel] * kernel[0][2]) +
-											(this.#imgData3D[row][column-1][channel] * kernel[1][0]) +
-											(this.#imgData3D[row][column][channel] * kernel[1][1]) +
-											(this.#imgData3D[row][column+1][channel] * kernel[1][2]) +
-											(this.#imgData3D[row+1][column-1][channel] * kernel[2][0]) +
-											(this.#imgData3D[row+1][column][channel] * kernel[2][1]) +
-											(this.#imgData3D[row+1][column+1][channel] * kernel[2][2])
-										));
-					blurData3D[row][column][channel] = blurredChannel;
-				}
-			}
-		}
-		this.#imgData3D = blurData3D;
-		this.#reshape1D();
-	}
-
 	/*	Convolution will take a kernel/mask and apply a moving average and assign the result to the center pixel of the output 
 		data structure. As of now this convolution function does not handle kernels that need to be rotated like more advanced 
 		edge detection kernels. This is also a single pass algorithm. If more than one pass is needed, call this function 
@@ -512,7 +305,6 @@ class IMFilter {
 					}
 				}
 			} else {
-				console.log(kernelSum);
 				for (var row = kRowRadius; row < this.#height-kRowRadius; row++) { // change after padding has been accounted for
 					for (var column = kColumnRadius; column < this.#width-kColumnRadius; column++) {  // change after padding has been accounted for
 						for (var channel = 0; channel < 3; channel++) {
@@ -525,8 +317,7 @@ class IMFilter {
 							if (convolvedChannel < 0) {
 								convolvedChannel = Math.sqrt(convolvedChannel ** 2);
 							}
-							//console.log(convolvedChannel);
-							convolveData3D[row][column][channel] = convolvedChannel / kernelSum;///////////////////////////////////////
+							convolveData3D[row][column][channel] = convolvedChannel / kernelSum;
 						}
 					}
 				}
@@ -662,6 +453,195 @@ class IMFilter {
 		}
 		this.#imgDataShell = emptyShell;
 		return emptyShell;
+	}
+
+	/* Sets filter based off of user selection.
+		This function will be called by the update function which in turn will be called when the user changes a selction value 
+		on the page controls section. It will get the filter selection value from the filterSelction element and then make the necessary 
+		filter function calls to achieve the desired effect.
+	*/
+	#setFilter() {
+		let filter = document.getElementById("filterSelection").value;
+		let newdata;
+		switch (filter) {
+			case "pixelate":
+				this.#pixelate();
+				break;
+			case "redChannel":
+				this.#redChannel();
+				break;
+			case "blueChannel":
+				this.#blueChannel();
+				break;
+			case "greenChannel":
+				this.#greenChannel();
+				break;
+			case "invert":
+				this.#invert();
+				break;
+			case "grayScale":
+				this.#grayScale();
+				break;
+			case "posterizeFloor":
+				this.#posterizeFloor();
+				break;
+			case "posterizeCeil":
+				this.#posterizeCeil();
+				break;
+			case "grayScaleRMS":
+				this.#grayScaleRMS();
+				break;
+			case "blur":
+				this.#blur();
+				this.#convolve(this.blurKernel);
+				break;
+			case "bigBlur":
+				this.#convolve(this.bigBlurKernel);
+				break;
+			case "swirlBlur":
+				this.#convolve(this.swirlKernel);
+				break;	
+			case "boxBlur":
+				this.#convolve(this.boxKernel);
+				break;	
+			case "jackBlur":
+				this.#convolve(this.crossKernel);
+				this.#posterizeFloor();
+				break;	
+			case "bigEdge":
+				this.#grayScale();
+				this.#convolve(this.bigEdgeKernel);
+				break;
+			case "edgeDetectGray":
+				this.#grayScaleRMS();
+				this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.horizontalEdgeDetectKernel);
+				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
+
+				this.#setCanvasImage();
+
+				this.#grayScaleRMS();
+				this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.verticalEdgeDetectKernel);
+				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
+
+				this.#vectorSum(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
+				break;
+			case "edgeDetectColor":
+				this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.horizontalEdgeDetectKernel);
+				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
+
+				this.#setCanvasImage();
+
+				this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.verticalEdgeDetectKernel);
+				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
+
+				this.#vectorSum(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
+				break;
+			case "sharpen":
+				this.#convolve(this.sharpenKernel);
+				break;
+			case "grayPoster":
+				this.#grayScaleRMS();
+				this.#posterizeFloor();
+				break;
+			case "redPoster":
+				this.#redChannel();
+				this.#posterizeFloor();
+				break;
+			case "grayPixel":
+				this.#grayScaleRMS();
+				this.#pixelate();
+				break;
+		}
+	}
+
+	/*  This filter will create a pixelation effect on the input image.
+		It will call the reshape3D() function to get a 3 dimensional array
+		to allow for easier checking of neighboring pixels within a 
+		square region to perform manipulations on color values. It will then average
+		each individual RGB Values and set that RGB Value for the square region.
+
+		The region size is currently fixed within the code but will implement user 
+		input in the future.
+	*/
+	#pixelate() {
+		this.#reshape3D();
+		const gridSquareSize = document.getElementById("parameter").value; // x by x square of pixels
+		const avgDiv = gridSquareSize ** 2;
+		const gridWidth = Math.floor(this.#width/gridSquareSize); // how many grid square wide
+		const gridHeight = Math.floor(this.#height/gridSquareSize); // how many grid squares tall
+		const widthTrim = Math.ceil((this.#width - (gridWidth*gridSquareSize))/2);
+		const heightTrim = Math.ceil((this.#height - (gridHeight*gridSquareSize))/2);
+
+		for (var y = 0; y < gridHeight; y++) {
+			for (var x = 0; x < gridWidth; x++) {
+				// Iterate through all values within grid squares and sum the values
+				var redChannelSum = 0;
+				var greenChannelSum = 0;
+				var blueChannelSum = 0;
+				for (var yInner = (y*gridSquareSize)+heightTrim; yInner < (((y+1)*gridSquareSize)+heightTrim); yInner++) {
+					for (var xInner = (x*gridSquareSize)+widthTrim; xInner < (((x+1)*gridSquareSize)+widthTrim); xInner++) {
+						redChannelSum += this.#imgData3D[yInner][xInner][0];
+						greenChannelSum += this.#imgData3D[yInner][xInner][1];
+						blueChannelSum += this.#imgData3D[yInner][xInner][2];
+					}
+				}
+
+				// Average the total channel sums and assign the values to every pixel within the grid square
+				var redChannelAverage = redChannelSum / avgDiv;
+				var greenChannelAverage = greenChannelSum / avgDiv;
+				var blueChannelAverage = blueChannelSum / avgDiv;
+				for (var yInner = (y*gridSquareSize)+heightTrim; yInner < (((y+1)*gridSquareSize)+heightTrim); yInner++) {
+					for (var xInner = (x*gridSquareSize)+widthTrim; xInner < (((x+1)*gridSquareSize)+widthTrim); xInner++) {
+						this.#imgData3D[yInner][xInner][0] = redChannelAverage;
+						this.#imgData3D[yInner][xInner][1] = greenChannelAverage;
+						this.#imgData3D[yInner][xInner][2] = blueChannelAverage;
+					}
+				}
+			}
+		} 
+		this.#reshape1D();
+	}
+
+	/* DEPRICATED. Use "this.#convolve(kernelInput)".
+		Basic Blur Filter
+		This Filter uses the convolution method and a built in weighted kernel to achieve a blurring affect. 
+		This method is ineffective and was developed more as a proof of concept. After futher research it has been determined that 
+		in order to have a blur effect with greater intensity a kernel with a larger distribution radius would be more cost effective then 
+		running this algorithm repeatedly. This function will be kept as a point of reference for algorithm efficiency as well as for 
+		library legacy data.
+	*/
+	#blur() {
+		this.#reshape3D();
+		var blurData3D = this.#imgData3D;
+		var kernel = [
+						[.0625,.125,.0625],
+						[.125,.25,.125],
+						[.0625,.125,.0625]
+					 ];
+		for (var row = 1; row < this.#height-1; row++) {
+			for (var column = 1; column < this.#width-1; column++) {
+				for (var channel = 0; channel < 3; channel++) {
+					var blurredChannel = Math.floor((
+											(this.#imgData3D[row-1][column-1][channel] * kernel[0][0]) +
+											(this.#imgData3D[row-1][column][channel] * kernel[0][1]) +
+											(this.#imgData3D[row-1][column+1][channel] * kernel[0][2]) +
+											(this.#imgData3D[row][column-1][channel] * kernel[1][0]) +
+											(this.#imgData3D[row][column][channel] * kernel[1][1]) +
+											(this.#imgData3D[row][column+1][channel] * kernel[1][2]) +
+											(this.#imgData3D[row+1][column-1][channel] * kernel[2][0]) +
+											(this.#imgData3D[row+1][column][channel] * kernel[2][1]) +
+											(this.#imgData3D[row+1][column+1][channel] * kernel[2][2])
+										));
+					blurData3D[row][column][channel] = blurredChannel;
+				}
+			}
+		}
+		this.#imgData3D = blurData3D;
+		this.#reshape1D();
 	}
 
 	// Creates a normal gray scale image by averaging the 3 RGB values.
@@ -875,19 +855,5 @@ function setPageDefaults() {  // LOW PRIORITY
 	document.getElementById("title").innerHTML = filename;
 	document.getElementById("titleHeader").innerHTML = filename;
 }
-
-// function splashScreen() {
-// 	// filter.update();
-// 	var div = document.getElementById("welcome");
-// 	div.style.zIndex = "-1";
-// 	div.style.opacity = "0.0";
-// 	// var slides = document.querySelector(".slide");
-// 	// for (var i = 0; i < slides.length; i++) {
-// 	// 	slides[i].style.opacity = "0.0";
-// 	// 	slides[i].style.color = "black";
-// 	// } 
-// }
-
-
 
 var filter = new IMFilter();
