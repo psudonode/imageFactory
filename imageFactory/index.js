@@ -262,7 +262,7 @@ class IMFilter {
 	#setCanvasImage() {
 		this.#ctxD.drawImage(this.#img, 0, 0);
 		this.#ctxF.drawImage(this.#img, 0, 0);
-		this.#imgData = this.#ctxD.getImageData(0,0,this.#width, this.#height);  ////////////////////////////////////////////////////
+		this.#imgData = this.#ctxD.getImageData(0,0,this.#width, this.#height);
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 	}
 
@@ -280,6 +280,9 @@ class IMFilter {
 		const kColumn = kernel[0].length;
 		const kRowRadius = Math.floor(kRow/2)
 		const kColumnRadius = Math.floor(kColumn/2);
+
+		this.#padImgData(kRowRadius, kColumnRadius);
+		
 		var kernelSum = 0;
 		for (var yPosition = 0; yPosition < kRow; yPosition++) {
 			for (var xPosition = 0; xPosition < kColumn; xPosition++) {
@@ -287,10 +290,11 @@ class IMFilter {
 			}
 		}
 		if (kRow % 2 == 0 || kColumn % 2 == 0) {
+			console.log("kernel dimensions must be odd on both sides");
 		} else {
 			if (kernelSum == 0) {
-				for (var row = kRowRadius; row < this.#height - kRowRadius; row++) { // change after padding has been accounted for
-					for (var column = kColumnRadius; column < this.#width-kColumnRadius; column++) {  // change after padding has been accounted for
+				for (var row = kRowRadius; row < this.#height + kRowRadius; row++) { // change after padding has been accounted for
+					for (var column = kColumnRadius; column < this.#width + kColumnRadius; column++) {  // change after padding has been accounted for
 						for (var channel = 0; channel < 3; channel++) {
 							var convolvedChannel = 0
 							// console.log(convolvedChannel);
@@ -300,24 +304,25 @@ class IMFilter {
 								}
 							}
 							convolvedChannel = Math.sqrt(convolvedChannel ** 2);
-							convolveData3D[row][column][channel] = convolvedChannel;
+							convolveData3D[row-kRowRadius][column-kColumnRadius][channel] = convolvedChannel;
 						}
 					}
 				}
 			} else {
-				for (var row = kRowRadius; row < this.#height-kRowRadius; row++) { // change after padding has been accounted for
-					for (var column = kColumnRadius; column < this.#width-kColumnRadius; column++) {  // change after padding has been accounted for
+				for (var row = kRowRadius; row < this.#height + kRowRadius; row++) { // change after padding has been accounted for
+					for (var column = kColumnRadius; column < this.#width + kColumnRadius; column++) {  // change after padding has been accounted for
 						for (var channel = 0; channel < 3; channel++) {
 							var convolvedChannel = 0
 							for (var yPosition = 0; yPosition < kRow; yPosition++) {
 								for (var xPosition = 0; xPosition < kColumn; xPosition++) {
+									// console.log(row - kRowRadius + yPosition);
 									convolvedChannel += this.#imgData3D[row - kRowRadius + yPosition][column - kColumnRadius + xPosition][channel] * kernel[yPosition][xPosition];
 								}
 							}
 							if (convolvedChannel < 0) {
 								convolvedChannel = Math.sqrt(convolvedChannel ** 2);
 							}
-							convolveData3D[row][column][channel] = convolvedChannel / kernelSum;
+							convolveData3D[row-kRowRadius][column-kColumnRadius][channel] = convolvedChannel / kernelSum;
 						}
 					}
 				}
@@ -325,6 +330,68 @@ class IMFilter {
 			this.#imgData3D = convolveData3D;
 			this.#reshape1D();
 		}
+	}
+
+	#padImgData(kernelRadiusY, kernelRadiusX) {
+		var data = this.#imgData3D;
+		var converted3DArray = new Array();
+		var imgChannelValuePointer = 0;
+		for (var row = 0; row < this.#height + (kernelRadiusY * 2); row++) {
+			var newRow = [];
+			converted3DArray.push(newRow);
+			for (var column = 0; column < this.#width + (kernelRadiusX * 2); column++) {
+				var newColorChannel = [];
+				newRow.push(newColorChannel);
+				for (var channel = 0; channel < 4; channel++) {
+					var yOffset;
+					var xOffset;
+					if (row < kernelRadiusY) {
+						yOffset = 0;
+					} else {
+						if (row >= this.#height + kernelRadiusY) {
+							yOffset = kernelRadiusY * -2;
+						} else {
+							yOffset = kernelRadiusY * -1;
+						}
+					}
+					if (column < kernelRadiusX) {
+						xOffset = 0;
+					} else {
+						if (column >= this.#width + kernelRadiusX) {
+							xOffset = kernelRadiusX * -2;
+						} else {
+							xOffset = kernelRadiusX * -1;
+						}
+					}
+					newColorChannel.push(data[row + yOffset][column + xOffset][channel]);
+				}
+			}
+		}
+		this.#imgData3D = converted3DArray;
+		
+		// for (var row = 0; row < this.#height  + (kernalRadius * 2); row++) { // change after padding has been accounted for
+		// 	for (var column = 0; column < this.#width + (kernalRadius * 2); column++) {  // change after padding has been accounted for
+		// 		for (var channel = 0; channel < 3; channel++) {
+		// 			var yOffset;
+		// 			var xOffset;
+		// 			if (row < kernalRadius) {
+		// 				yOffset = kernalRadius;
+		// 			} else if (row > this.#height) {
+		// 				yOffset = kernelRadius * -1;
+		// 			} else {
+		// 				yOffset = 0;
+		// 			}
+		// 			if (column < kernalRadius) {
+		// 				xOffset = kernalRadius;
+		// 			} else if (column > this.#width) {
+		// 				xOffset = kernelRadius * -1;
+		// 			} else {
+		// 				xOffset = 0;
+		// 			}
+		// 			converted3DArray[row][column][channel] = converted3DArray[row + yOffset][column + xOffset][channel];
+		// 		}
+		// 	}
+		// }
 	}
 
 	/*  Calculate Vector Sums for egde detection vertical and horizonal values
