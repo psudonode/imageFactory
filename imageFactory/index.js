@@ -604,27 +604,35 @@ class IMFilter {
 				break;
 			case "edgeDetectGray":
 				this.#grayScaleRMS();
-				this.#convolve(this.bigBlurKernel);
+				// this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.blurKernel);
+				this.#convolve(this.blurKernel);
 				this.#convolve(this.sobelGxKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
 
 				this.#setCanvasImage();
 
 				this.#grayScaleRMS();
-				this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.blurKernel);
+				this.#convolve(this.blurKernel);
+				// this.#convolve(this.bigBlurKernel);
 				this.#convolve(this.sobelGyKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
 
 				this.#vectorSum(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
 				break;
 			case "edgeDetectColor":
-				this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.blurKernel);
+				this.#convolve(this.blurKernel);
+				// this.#convolve(this.bigBlurKernel);
 				this.#convolve(this.sobelGxKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
 
 				this.#setCanvasImage();
 
-				this.#convolve(this.bigBlurKernel);
+				this.#convolve(this.blurKernel);
+				this.#convolve(this.blurKernel);
+				// this.#convolve(this.bigBlurKernel);
 				this.#convolve(this.sobelGyKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
 
