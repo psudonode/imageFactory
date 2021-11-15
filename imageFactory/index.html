@@ -19,6 +19,13 @@
 		</div>
 		<div id="slide3" class="slide">Click Anywhere to Begin</div>
 	</div>
+	<div id="loadScreen">
+		<div id="bigCircle">
+			<div id="innerCircle">
+				<div id="cropCircle"></div>
+			</div>
+		</div>
+	</div>
 	<table>
 		<tr id="titleBar">
 			<td class="title"></td>
@@ -48,7 +55,7 @@
 					(Applies to: Pixelate, Posterize) 
 					<br>
 					<!-- Change to Dynamically adjust settings to better suit functionality of filter -->
-					<input type="range" min="2" max="30" value="15" class="slider" id="parameter" onchange="filter.update()">
+					<input type="range" min="2" max="30" value="15" class="slider" id="parameter" onchange="filter.loadScreenStart()">
 					<br>
 					<br>
 				</center>

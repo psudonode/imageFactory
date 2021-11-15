@@ -37,7 +37,7 @@ class IMFilter {
 		["redChannel", "Red Scale", 0],
 		["greenChannel", "Green Scale", 0],
 		["blueChannel", "Blue Scale", 0],
-		["alphaChannel", "Alpha Scale", 0],
+		//["alphaChannel", "Alpha Scale", 0],
 		["pixelate", "Pixelate", 0],
 		["invert", "Invert", 0],
 		["posterizeFloor", "Posterize Dark", 0],
@@ -50,17 +50,53 @@ class IMFilter {
 	];
 	#imageSelectionMenu = [  //  A list of local image file names used to allow user selection to demonstrate filter effects on a range of color pallets and textures.
 		["imageSelection", "", 0, 0],
-		["resources/facepaint.jpg", "Face Paint", 0, 0],
-		["resources/babygroot.jpg", "Baby Groot", 0, 0],
-		["resources/yellowflowers.jpg", "Yellow Flowers", 0, 0],
-		["resources/cyborg.jpg", "Cyborg", 0, 0]
+		["resources/bareBranches.png", "Bare Branches", 0, 0],
+		["resources/barkClose.png", "Bark Close 1", 0, 0],
+		["resources/barkClose2.png", "Bark Close 2", 0, 0],
+		["resources/berryClose.png", "Berry Close", 0, 0],
+		["resources/cactusClose.png", "Cactus Close", 0, 0],
+		["resources/crookedBridgeKids.png", "Crooked Bridge Kids", 0, 0],
+		["resources/crookedBridge.png", "Crooked Bridge 1", 0, 0],
+		["resources/crookedBridge1.png", "Crooked Bridge 2", 0, 0],
+		["resources/crookedBridgeGrate.png", "Crooked Bridge Grate", 0, 0],
+		["resources/footPrint.jpeg", "Foot Print", 0, 0],
+		["resources/knot.png", "Knot", 0, 0],
+		["resources/knotSide.png", "Knot Side", 0, 0],
+		["resources/lakeView.png", "Lake View", 0, 0],
+		["resources/leafInHand.png", "Leaf in Hand", 0, 0],
+		["resources/leaves.png", "Leaves", 0, 0],
+		["resources/leavesAndBerries.png", "Leaves and Berries", 0, 0],
+		["resources/leavesAndPines.png", "Leaves and Pines", 0, 0],
+		["resources/leavesClose.png", "Leaves Close", 0, 0],
+		["resources/leavesClose2.png", "Leaves Close 2", 0, 0],
+		["resources/nestedBerries.png", "Nested Berries", 0, 0],
+		["resources/pinesClose.png", "Pines Close", 0, 0],
+		["resources/purpleFlowers.png", "Purple Flowers", 0, 0],
 	];
 	#imageList = [
 		"list", 
-		"resources/facepaint.jpg",
-		"resources/babygroot.jpg",
-		"resources/yellowflowers.jpg",
-		"resources/cyborg.jpg"
+		"resources/bareBranches.png",
+		"resources/barkClose.png",
+		"resources/barkClose2.png",
+		"resources/berryClose.png",
+		"resources/cactusClose.png",
+		"resources/crookedBridgeKids.png",
+		"resources/crookedBridge.png",
+		"resources/crookedBridge1.png",
+		"resources/crookedBridgeGrate.png",
+		"resources/footPrint.jpeg",
+		"resources/knot.png",
+		"resources/knotSide.png",
+		"resources/lakeView.png",
+		"resources/leafInHand.png",
+		"resources/leaves.png",
+		"resources/leavesAndBerries.png",
+		"resources/leavesAndPines.png",
+		"resources/leavesClose.png",
+		"resources/leavesClose2.png",
+		"resources/nestedBerries.png",
+		"resources/pinesClose.png",
+		"resources/purpleFlowers.png"
 	];
 	bigBlurKernel = [  // A strong blur kernel. Use this kernel one time in stead of multiple small blurring convolutions. Computationally more efficient.
 		[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
@@ -116,12 +152,12 @@ class IMFilter {
 		[0,1119,0,0,0,0,0,1119,0],
 		[1119,0,0,0,0,0,0,0,1119]
 	];
-	verticalEdgeDetectKernel = [  // Kernel used for vertical edge detection.
+	sobelGyKernel = [  // Kernel used for vertical edge detection.
 		[-1,0,1],
 		[-2,0,2],
 		[-1,0,1]
 	];
-	horizontalEdgeDetectKernel = [  // Kernel used for horizontal edge detection.
+	sobelGxKernel = [  // Kernel used for horizontal edge detection.
 		[-1,-2,-1],
 		[0,0,0],
 		[1,2,1]
@@ -184,7 +220,6 @@ class IMFilter {
 	}
 
 	#buildMenu(target, menuList) {
-		//console.log(target, "buildMenu(): STARTING....");
 		let targetDiv = document.getElementById(target);
 		let selectBox = document.createElement("select");
 		selectBox.id = menuList[0][0];
@@ -194,7 +229,7 @@ class IMFilter {
 			selectOption.innerHTML = menuList[i][1];
 			selectBox.appendChild(selectOption);
 		}
-		selectBox.setAttribute("onchange", "filter.update()");
+		selectBox.setAttribute("onchange", "filter.loadScreenStart()");
 		targetDiv.appendChild(selectBox);
 	}
 
@@ -208,6 +243,21 @@ class IMFilter {
 		this.#copyImgData3D(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
 		this.#setFilter();
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
+		setTimeout(this.#loadScreenStop, 200);
+		// this.#loadScreenStop();
+	}
+
+	loadScreenStart() {
+		var loadScreen = document.getElementById("loadScreen");
+		loadScreen.style.zIndex = "7";
+		loadScreen.style.opacity = "100%";
+		setTimeout(this.update.bind(this),100);
+	}
+
+	#loadScreenStop() {
+		var loadScreen = document.getElementById("loadScreen");
+		loadScreen.style.zIndex = "-1";
+		loadScreen.style.opacity = "0%";
 	}
 
 	/*   Dismiss the Welcome Splash Screen Animation
@@ -332,6 +382,7 @@ class IMFilter {
 		}
 	}
 
+	/*	Adds a border of extra pixels to prevent array out of bounds Error on image border convolution computations*/
 	#padImgData(kernelRadiusY, kernelRadiusX) {
 		var data = this.#imgData3D;
 		var converted3DArray = new Array();
@@ -368,30 +419,6 @@ class IMFilter {
 			}
 		}
 		this.#imgData3D = converted3DArray;
-		
-		// for (var row = 0; row < this.#height  + (kernalRadius * 2); row++) { // change after padding has been accounted for
-		// 	for (var column = 0; column < this.#width + (kernalRadius * 2); column++) {  // change after padding has been accounted for
-		// 		for (var channel = 0; channel < 3; channel++) {
-		// 			var yOffset;
-		// 			var xOffset;
-		// 			if (row < kernalRadius) {
-		// 				yOffset = kernalRadius;
-		// 			} else if (row > this.#height) {
-		// 				yOffset = kernelRadius * -1;
-		// 			} else {
-		// 				yOffset = 0;
-		// 			}
-		// 			if (column < kernalRadius) {
-		// 				xOffset = kernalRadius;
-		// 			} else if (column > this.#width) {
-		// 				xOffset = kernelRadius * -1;
-		// 			} else {
-		// 				xOffset = 0;
-		// 			}
-		// 			converted3DArray[row][column][channel] = converted3DArray[row + yOffset][column + xOffset][channel];
-		// 		}
-		// 	}
-		// }
 	}
 
 	/*  Calculate Vector Sums for egde detection vertical and horizonal values
@@ -582,27 +609,27 @@ class IMFilter {
 			case "edgeDetectGray":
 				this.#grayScaleRMS();
 				this.#convolve(this.bigBlurKernel);
-				this.#convolve(this.horizontalEdgeDetectKernel);
+				this.#convolve(this.sobelGxKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
 
 				this.#setCanvasImage();
 
 				this.#grayScaleRMS();
 				this.#convolve(this.bigBlurKernel);
-				this.#convolve(this.verticalEdgeDetectKernel);
+				this.#convolve(this.sobelGyKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
 
 				this.#vectorSum(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
 				break;
 			case "edgeDetectColor":
 				this.#convolve(this.bigBlurKernel);
-				this.#convolve(this.horizontalEdgeDetectKernel);
+				this.#convolve(this.sobelGxKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterB);
 
 				this.#setCanvasImage();
 
 				this.#convolve(this.bigBlurKernel);
-				this.#convolve(this.verticalEdgeDetectKernel);
+				this.#convolve(this.sobelGyKernel);
 				this.#copyImgData3D(this.#imgData3D, this.#imgData3DRegisterA);
 
 				this.#vectorSum(this.#imgData3DRegisterA, this.#imgData3DRegisterB);
