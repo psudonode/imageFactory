@@ -11,7 +11,23 @@
 	alpha channel data like so [red0, green0, blue0, alpha0, red1, green1, blue1, alpha1, ...... ]. Most the basic filters are building blocks
 	for the more complex filter effects using the filter stack.
 
-	Eventually this library will be made into a Class or classes to allow for modularity and portability.
+	The convolution function is a stepping stone into computational photography/computer vision/image processing.
+
+	As of not a Sobel Edge Detection is working. Next step will be to calculate gradiant angles of the Sobel Edges and then to 
+	reduce edges to a set pixel width using the Canny method of two level threshold filtering.
+
+	A loading Screen has been added for convolution methods that take more time. 
+
+	A welcome Splash Sceen is used to allow images to be preloaded before actually being used.
+
+	Big blur will be changed to better optimize for time. As is, the larger the resolution of the image the longer it takes to compute 
+	the larger convolution kernel processes.
+
+	****F5 is currently needed so images can be cached. 
+
+	Eventually there will be a dynamic, user defined, filter stack so that the user can pick from multiple filters and combine
+	them to achieve non standard results. There is also a "Gallery Mode" that will allow a user to see what effect a filter would
+	on an image via thumbnail previews.
 */
 
 class IMFilter {
@@ -212,7 +228,6 @@ class IMFilter {
 			loadingImage.src = this.#imageList[i];
 			this.#imgArray[i] = loadingImage;
 			this.#imageSelectionMenu[i][2] = this.#imgArray[i].height;
-			console.log(this.#imgArray[i].height);
 			this.#imageSelectionMenu[i][3] = this.#imgArray[i].width;
 			this.#img = this.#imgArray[i];
 			console.log(this.#imgArray[i].height, this.#imgArray[i].width);
@@ -244,7 +259,6 @@ class IMFilter {
 		this.#setFilter();
 		this.#ctxF.putImageData(this.#imgData, 0, 0);
 		setTimeout(this.#loadScreenStop, 200);
-		// this.#loadScreenStop();
 	}
 
 	loadScreenStart() {
@@ -343,11 +357,10 @@ class IMFilter {
 			console.log("kernel dimensions must be odd on both sides");
 		} else {
 			if (kernelSum == 0) {
-				for (var row = kRowRadius; row < this.#height + kRowRadius; row++) { // change after padding has been accounted for
-					for (var column = kColumnRadius; column < this.#width + kColumnRadius; column++) {  // change after padding has been accounted for
+				for (var row = kRowRadius; row < this.#height + kRowRadius; row++) {
+					for (var column = kColumnRadius; column < this.#width + kColumnRadius; column++) {
 						for (var channel = 0; channel < 3; channel++) {
 							var convolvedChannel = 0
-							// console.log(convolvedChannel);
 							for (var yPosition = 0; yPosition < kRow; yPosition++) {
 								for (var xPosition = 0; xPosition < kColumn; xPosition++) {
 									convolvedChannel += this.#imgData3D[row - kRowRadius + yPosition][column - kColumnRadius + xPosition][channel] * kernel[yPosition][xPosition];
@@ -359,19 +372,16 @@ class IMFilter {
 					}
 				}
 			} else {
-				for (var row = kRowRadius; row < this.#height + kRowRadius; row++) { // change after padding has been accounted for
-					for (var column = kColumnRadius; column < this.#width + kColumnRadius; column++) {  // change after padding has been accounted for
+				for (var row = kRowRadius; row < this.#height + kRowRadius; row++) {
+					for (var column = kColumnRadius; column < this.#width + kColumnRadius; column++) {
 						for (var channel = 0; channel < 3; channel++) {
 							var convolvedChannel = 0
 							for (var yPosition = 0; yPosition < kRow; yPosition++) {
 								for (var xPosition = 0; xPosition < kColumn; xPosition++) {
-									// console.log(row - kRowRadius + yPosition);
 									convolvedChannel += this.#imgData3D[row - kRowRadius + yPosition][column - kColumnRadius + xPosition][channel] * kernel[yPosition][xPosition];
 								}
 							}
-							if (convolvedChannel < 0) {
-								convolvedChannel = Math.sqrt(convolvedChannel ** 2);
-							}
+							convolvedChannel = Math.sqrt(convolvedChannel ** 2);
 							convolveData3D[row-kRowRadius][column-kColumnRadius][channel] = convolvedChannel / kernelSum;
 						}
 					}
@@ -429,8 +439,8 @@ class IMFilter {
 		var b;
 		var c;
 
-		for (var row = 0; row < this.#height; row++) { // change after padding has been accounted for
-			for (var column = 0; column < this.#width; column++) {  // change after padding has been accounted for
+		for (var row = 0; row < this.#height; row++) {
+			for (var column = 0; column < this.#width; column++) {
 				for (var channel = 0; channel < 3; channel++) {
 					a = horizontalEdgeVector3DArray[row][column][channel];
 					b = verticalEdgeVector3DArray[row][column][channel];
@@ -444,12 +454,10 @@ class IMFilter {
 
 	/* Copy 3D Array data from Source array to Target array */
 	#copyImgData3D(source, target) {
-		for (var row = 0; row < this.#height; row++) { // change after padding has been accounted for
-			for (var column = 0; column < this.#width; column++) {  // change after padding has been accounted for
+		for (var row = 0; row < this.#height; row++) {
+			for (var column = 0; column < this.#width; column++) {
 				for (var channel = 0; channel < 3; channel++) {
-					// console.log(source[row][column][channel]);
-					// console.log(target[row][column][channel]);
-					target[row][column][channel] = source[row][column][channel];  ////////////////////////////////////////////
+					target[row][column][channel] = source[row][column][channel];
 				}
 			}
 		}
@@ -462,26 +470,15 @@ class IMFilter {
 	#reshape3D() {		
 		var data = this.#imgData.data;
 		var converted3DArray = new Array();
-		// var converted3DArray2 = new Array();
-		// var converted3DArray3 = new Array();
 		var imgChannelValuePointer = 0;
 		for (var row = 0; row < this.#height; row++) {
 			var newRow = [];
-			// var newRow2 = [];
-			// var newRow3 = [];
 			converted3DArray.push(newRow);
-			// converted3DArray2.push(newRow2);
-			// converted3DArray3.push(newRow3);
 			for (var column = 0; column < this.#width; column++) {
 				var newColorChannel = [];
-				// var newColorChannel2 = [];
-				// var newColorChannel3 = [];
 				newRow.push(newColorChannel);
-				// newRow2.push(newColorChannel2);
-				// newRow3.push(newColorChannel3);
 				for (var channel = 0; channel < 4; channel++) {
 					newColorChannel.push(data[imgChannelValuePointer]);
-					//newColorChannel2.push(data[imgChannelValuePointer]);
 					imgChannelValuePointer++;
 				}
 			}
@@ -546,7 +543,6 @@ class IMFilter {
 			emptyShell.data[i] = 0;
 		}
 		this.#imgDataShell = emptyShell;
-		return emptyShell;
 	}
 
 	/* Sets filter based off of user selection.
